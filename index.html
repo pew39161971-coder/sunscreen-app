@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>선크림 재도포 알림</title>
+<meta name="theme-color" content="#4F8EF7">
+<link rel="manifest" href="manifest.json">
+<link rel="stylesheet" href="style.css">
+<link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+
+  <!-- 권한 요청 오버레이: 앱 최초 실행 시 표시된다 -->
+  <div id="permissionOverlay" class="overlay">
+    <div class="overlay-card">
+      <div class="overlay-icon">🧴</div>
+      <h2>선크림 재도포 알림</h2>
+      <p>정확한 보호율 계산을 위해<br>위치, 센서, 알림 권한이 필요합니다.</p>
+      <button id="startBtn" class="btn btn-primary">권한 허용하고 시작하기</button>
+      <p id="permissionError" class="error-text"></p>
+    </div>
+  </div>
+
+  <div class="app-container">
+
+    <!-- ===== 상단: UV / 위치 / 시간 ===== -->
+    <header class="header-card">
+      <div class="header-item">
+        <span class="header-icon">☀️</span>
+        <div>
+          <div class="header-label">UV Index</div>
+          <div class="header-value" id="uvValue">--</div>
+        </div>
+      </div>
+      <div class="header-item">
+        <span class="header-icon">📍</span>
+        <div>
+          <div class="header-label">현재 위치</div>
+          <div class="header-value" id="locationValue">--</div>
+        </div>
+      </div>
+      <div class="header-item">
+        <span class="header-icon">🕒</span>
+        <div>
+          <div class="header-label">현재 시간</div>
+          <div class="header-value" id="timeValue">--:--:--</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ===== 중앙: 원형 게이지 + 정보 ===== -->
+    <main class="gauge-card">
+      <div class="gauge-wrapper">
+        <svg class="gauge-svg" viewBox="0 0 200 200">
+          <circle class="gauge-bg" cx="100" cy="100" r="85"></circle>
+          <circle id="gaugeProgress" class="gauge-progress" cx="100" cy="100" r="85"></circle>
+        </svg>
+        <div class="gauge-center">
+          <div class="gauge-percent" id="protectionValue">100%</div>
+          <div class="gauge-status" id="statusText">안전</div>
+        </div>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="info-icon">⏱️</div>
+          <div class="info-label">경과 시간</div>
+          <div class="info-value" id="elapsedValue">0분</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🏃</div>
+          <div class="info-label">활동량</div>
+          <div class="info-value" id="activityValue">0.0</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">☀️</div>
+          <div class="info-label">UV 지수</div>
+          <div class="info-value" id="uvInfoValue">--</div>
+        </div>
+        <div class="info-item">
+          <div class="info-icon">🛡️</div>
+          <div class="info-label">보호율</div>
+          <div class="info-value" id="protectionInfoValue">100%</div>
+        </div>
+      </div>
+
+      <div id="warningBanner" class="warning-banner hidden">
+        ⚠️ 선크림 보호 효과가 낮아졌습니다. 재도포를 권장합니다!
+      </div>
+    </main>
+
+    <!-- ===== 하단: 선크림 바름 버튼 ===== -->
+    <footer class="footer-area">
+      <button id="applyBtn" class="btn btn-apply">
+        <span class="btn-icon">🧴</span> 선크림 발랐어요
+      </button>
+      <div class="last-applied" id="lastAppliedText">아직 기록이 없습니다</div>
+    </footer>
+
+  </div>
+
+<script src="script.js"></script>
+</body>
+</html>

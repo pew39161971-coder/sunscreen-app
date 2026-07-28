@@ -1,0 +1,12 @@
+{
+  "name": "선크림 재도포 알림",
+  "short_name": "선크림알림",
+  "description": "UV, 위치, 센서 데이터를 이용해 선크림 재도포 시점을 알려주는 앱",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F8EF7",
+  "orientation": "portrait",
+    }
+  ]
+}

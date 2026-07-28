@@ -1,0 +1,220 @@
+/* ============================================================
+   선크림 재도포 알림 앱 - style.css
+   Material Design 느낌의 라운드 카드 + 부드러운 그림자 + 반응형
+   ============================================================ */
+
+:root {
+  --color-primary: #4F8EF7;
+  --color-primary-dark: #3A6FD1;
+  --color-green: #34C759;
+  --color-yellow: #FFCC00;
+  --color-red: #FF3B30;
+  --color-bg: #F5F7FA;
+  --color-card: #FFFFFF;
+  --color-text: #1C1C1E;
+  --color-text-secondary: #8E8E93;
+  --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.08);
+  --radius-lg: 24px;
+  --radius-md: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Malgun Gothic', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+/* ------------------ 권한 요청 오버레이 ------------------ */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.overlay-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 360px;
+  box-shadow: var(--shadow-soft);
+}
+.overlay-icon { font-size: 48px; margin-bottom: 12px; }
+.overlay-card h2 { font-size: 20px; margin-bottom: 12px; }
+.overlay-card p {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+.error-text { color: var(--color-red); font-size: 13px; margin-top: 12px; }
+
+/* ------------------ 버튼 ------------------ */
+.btn {
+  border: none;
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:active { transform: scale(0.97); }
+.btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+  width: 100%;
+  box-shadow: 0 4px 12px rgba(79, 142, 247, 0.4);
+}
+.btn-apply {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark));
+  color: #fff;
+  width: 100%;
+  box-shadow: 0 6px 16px rgba(79, 142, 247, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-icon { font-size: 18px; }
+
+/* ------------------ 앱 컨테이너 ------------------ */
+.app-container {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ------------------ 헤더 카드 ------------------ */
+.header-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.header-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.header-icon { font-size: 20px; flex-shrink: 0; }
+.header-label { font-size: 11px; color: var(--color-text-secondary); }
+.header-value {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------ 게이지 카드 ------------------ */
+.gauge-card {
+  background: var(--color-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft);
+  padding: 24px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.gauge-wrapper {
+  position: relative;
+  width: 220px;
+  height: 220px;
+}
+.gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg); /* 12시 방향에서 시작 */
+}
+.gauge-bg {
+  fill: none;
+  stroke: #EEF1F6;
+  stroke-width: 14;
+}
+.gauge-progress {
+  fill: none;
+  stroke: var(--color-green);
+  stroke-width: 14;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s ease, stroke 0.6s ease;
+}
+.gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.gauge-percent { font-size: 40px; font-weight: 700; }
+.gauge-status { font-size: 14px; font-weight: 600; margin-top: 4px; }
+
+/* ------------------ 정보 그리드 ------------------ */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+.info-item {
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 12px 4px;
+  text-align: center;
+}
+.info-icon { font-size: 18px; margin-bottom: 4px; }
+.info-label { font-size: 10px; color: var(--color-text-secondary); margin-bottom: 2px; }
+.info-value { font-size: 14px; font-weight: 700; }
+
+/* ------------------ 경고 배너 ------------------ */
+.warning-banner {
+  width: 100%;
+  background: #FFF3F0;
+  color: var(--color-red);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* ------------------ 하단 영역 ------------------ */
+.footer-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 16px;
+}
+.last-applied {
+  text-align: center;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+/* ------------------ 반응형 ------------------ */
+@media (max-width: 360px) {
+  .gauge-wrapper { width: 180px; height: 180px; }
+  .gauge-percent { font-size: 32px; }
+  .info-grid { grid-template-columns: repeat(2, 1fr); }
+}
