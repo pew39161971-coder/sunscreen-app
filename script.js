@@ -258,6 +258,10 @@ function calculateActivity() {
   const gyroAvg = gyroValues.length ? average(gyroValues) : 0;
 
   const rawScore = accelDeviation * CONFIG.ACCEL_WEIGHT + gyroAvg * CONFIG.GYRO_WEIGHT;
+
+  // 센서 노이즈 필터: 미세한 잔류값(데스크톱 등)은 0으로 처리
+  if (rawScore < 0.02) return 0;
+
   const score = clamp(rawScore, 0, CONFIG.MAX_ACTIVITY_SCORE);
   return Math.round(score * 100) / 100;
 }
@@ -419,13 +423,13 @@ function updateLastAppliedText() {
 /* ------------------------------------------------------------
    12. 추적 시작 (메인 루프)
 ------------------------------------------------------------ */
-function startTracking() {
+async function startTracking() {
+  // 위치를 먼저 확보한 뒤 UV를 조회해야 UV API에 좌표를 전달할 수 있다
+  await refreshLocation();
+  await refreshUV();
+
   setInterval(updateUI, CONFIG.UI_UPDATE_INTERVAL_MS);
-
-  refreshUV();
   setInterval(refreshUV, CONFIG.UV_REFRESH_INTERVAL_MS);
-
-  refreshLocation();
   setInterval(refreshLocation, CONFIG.LOCATION_REFRESH_INTERVAL_MS);
 
   updateUI();
