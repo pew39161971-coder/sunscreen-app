@@ -12,7 +12,7 @@ const CONFIG = {
   // 보호율 누적 감소 계산용 상수 (1분당 감소량)
   BASE_LOSS_PER_MINUTE: 0.3,         // 기본 시간당 감소율
   UV_LOSS_PER_MINUTE_PER_UV: 0.05,   // UV 지수 1당 추가 감소율(분당)
-  ACTIVITY_MULTIPLIER: 2.0,          // 활동량 점수 1당 배수 증가량 (예: 땀을 흘리면 선크림이 최대 4배 빨리 씻겨나감)
+  ACTIVITY_MULTIPLIER: 0.6,          // 활동량 점수 1당 배수 증가량 (점수 5일 때 4배속 감소)
 
   // 갱신 주기
   UI_UPDATE_INTERVAL_MS: 1000,             // UI 갱신 주기 (1초)
@@ -21,9 +21,9 @@ const CONFIG = {
 
   // 센서 관련 설정
   SENSOR_WINDOW_MS: 5000,   // 센서 데이터 평균에 사용할 시간창(5초) - 노이즈 제거
-  ACCEL_WEIGHT: 0.15,       // 가속도 변동폭 가중치 (기기별 보정 필요)
-  GYRO_WEIGHT: 0.02,        // 자이로 회전속도 가중치 (기기별 보정 필요)
-  MAX_ACTIVITY_SCORE: 1.5,  // 활동량 점수 최대값 (격렬한 운동)
+  ACCEL_WEIGHT: 0.08,       // 가속도 변동폭 가중치 (기기별 보정 필요)
+  GYRO_WEIGHT: 0.01,        // 자이로 회전속도 가중치 (기기별 보정 필요)
+  MAX_ACTIVITY_SCORE: 5.0,  // 활동량 점수 최대값 (격렬한 운동)
 
   // 알림 임계값 (요구사항: 70 이상 초록 / 30~70 노랑 / 30 이하 빨강)
   NOTIFY_THRESHOLD: 30,
@@ -71,6 +71,7 @@ const dom = {
 
   elapsedValue: document.getElementById('elapsedValue'),
   activityValue: document.getElementById('activityValue'),
+  activityStatus: document.getElementById('activityStatus'),
   uvInfoValue: document.getElementById('uvInfoValue'),
   protectionInfoValue: document.getElementById('protectionInfoValue'),
 
@@ -266,6 +267,18 @@ function calculateActivity() {
   return Math.round(score * 100) / 100;
 }
 
+/**
+ * 활동량 점수를 사람이 읽을 수 있는 상태 라벨로 변환한다.
+ * 0=정지, ~1=걷기, ~2=빠르게 걷기, ~3.5=달리기, ~5=격렬한 운동
+ */
+function getActivityLabel(score) {
+  if (score < 0.3) return '정지';
+  if (score < 1.5) return '걷기';
+  if (score < 2.5) return '빠르게 걷기';
+  if (score < 4.0) return '달리기';
+  return '격렬한 운동';
+}
+
 /** 센서 리스너 등록 (권한 허용 후 호출) */
 function attachSensorListeners() {
   if (state.sensorsAttached) return;
@@ -353,6 +366,7 @@ function updateUI() {
 
   state.activityScore = calculateActivity();
   dom.activityValue.textContent = state.activityScore.toFixed(2);
+  dom.activityStatus.textContent = getActivityLabel(state.activityScore);
 
   updateProtection(now.getTime());
 

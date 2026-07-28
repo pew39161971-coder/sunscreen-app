@@ -186,6 +186,7 @@ body {
 .info-icon { font-size: 18px; margin-bottom: 4px; }
 .info-label { font-size: 10px; color: var(--color-text-secondary); margin-bottom: 2px; }
 .info-value { font-size: 14px; font-weight: 700; }
+.info-status { font-size: 10px; font-weight: 600; margin-top: 2px; color: var(--color-primary); }
 
 /* ------------------ 경고 배너 ------------------ */
 .warning-banner {
