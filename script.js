@@ -9,11 +9,10 @@
    공식/민감도 조정이 필요하면 이 객체 값만 수정하면 된다.
 ------------------------------------------------------------ */
 const CONFIG = {
-  // 보호율 감소 공식 가중치
-  // loss = elapsedMinutes * TIME_FACTOR + UV * UV_FACTOR + activityScore * ACTIVITY_FACTOR
-  TIME_FACTOR: 0.2,      // 경과 시간(분) 1당 감소율
-  UV_FACTOR: 0.8,        // UV 지수 1당 감소율
-  ACTIVITY_FACTOR: 15,   // 활동량 점수 1당 감소율
+  // 보호율 누적 감소 계산용 상수 (1분당 감소량)
+  BASE_LOSS_PER_MINUTE: 0.3,         // 기본 시간당 감소율
+  UV_LOSS_PER_MINUTE_PER_UV: 0.05,   // UV 지수 1당 추가 감소율(분당)
+  ACTIVITY_MULTIPLIER: 2.0,          // 활동량 점수 1당 배수 증가량 (예: 땀을 흘리면 선크림이 최대 4배 빨리 씻겨나감)
 
   // 갱신 주기
   UI_UPDATE_INTERVAL_MS: 1000,             // UI 갱신 주기 (1초)
@@ -32,6 +31,8 @@ const CONFIG = {
 
   UV_FALLBACK: 5,
   STORAGE_KEY_APPLIED_AT: 'sunscreen_applied_at',
+  STORAGE_KEY_ACCUMULATED_LOSS: 'sunscreen_accumulated_loss',
+  STORAGE_KEY_LAST_UPDATE: 'sunscreen_last_update',
 };
 
 /* ------------------------------------------------------------
@@ -43,6 +44,8 @@ const state = {
   currentLocation: null,
   activityScore: 0,
   protection: 100,
+  accumulatedLoss: 0,
+  lastUpdateTime: null,
   notified: false,
   sensorsAttached: false,
 };
@@ -151,23 +154,16 @@ async function refreshLocation() {
  */
 async function getUV(lat, lon) {
   try {
-    // ---------------------------------------------------------
-    // [실제 API 연동 예시] 주석 해제 후 API 키 입력하면 사용 가능
-    //
-    // const API_KEY = 'YOUR_OPENUV_API_KEY';
-    // const response = await fetch(
-    //   `https://api.openuv.io/api/v1/uv?lat=${lat}&lng=${lon}`,
-    //   { headers: { 'x-access-token': API_KEY } }
-    // );
-    // if (!response.ok) throw new Error('UV API 응답 오류');
-    // const data = await response.json();
-    // return data.result.uv;
-    // ---------------------------------------------------------
-
-    return generateMockUV();
+    // Open-Meteo의 무료 API를 사용하여 현재 위치의 실시간 UV 지수를 가져옵니다. (API 키 불필요)
+    const response = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=uv_index`
+    );
+    if (!response.ok) throw new Error('UV API 응답 오류');
+    const data = await response.json();
+    return data.current.uv_index;
   } catch (err) {
-    console.error('UV 조회 실패:', err);
-    return CONFIG.UV_FALLBACK;
+    console.error('UV 조회 실패, 가상 데이터로 대체:', err);
+    return generateMockUV();
   }
 }
 
@@ -275,20 +271,45 @@ function attachSensorListeners() {
 }
 
 /* ------------------------------------------------------------
-   8. 보호율 계산 함수
+   8. 보호율 계산 함수 (누적 방식)
 ------------------------------------------------------------ */
 
 /**
- * loss = elapsedMinutes * TIME_FACTOR + UV * UV_FACTOR + activityScore * ACTIVITY_FACTOR
- * protection = clamp(100 - loss, 0, 100)
+ * 시간, UV, 활동량을 바탕으로 매초(또는 경과 시간만큼) 보호율 감소량을 누적한다.
+ * 땀을 흘리면 선크림이 씻겨나가 유지 시간이 절반 이상 줄어드는 과학적 원리를 반영하여,
+ * 활동량에 비례하는 배수(Multiplier)를 감소량에 곱한다.
  */
-function calculateProtection(elapsedMinutes, uv, activityScore) {
-  const loss =
-    elapsedMinutes * CONFIG.TIME_FACTOR +
-    uv * CONFIG.UV_FACTOR +
-    activityScore * CONFIG.ACTIVITY_FACTOR;
+function updateProtection(now) {
+  if (!state.appliedAt) {
+    state.protection = 100;
+    return;
+  }
 
-  return Math.round(clamp(100 - loss, 0, 100));
+  if (!state.lastUpdateTime) {
+    state.lastUpdateTime = now;
+  }
+
+  const dtMs = now - state.lastUpdateTime;
+  if (dtMs <= 0) return;
+
+  const dtMinutes = dtMs / 60000;
+  const uv = state.currentUV ?? CONFIG.UV_FALLBACK;
+  
+  // 기본 감소량 + UV에 의한 감소량
+  const baseLoss = (CONFIG.BASE_LOSS_PER_MINUTE + uv * CONFIG.UV_LOSS_PER_MINUTE_PER_UV) * dtMinutes;
+  
+  // 활동량에 따른 배수 (활동량 0일때 1배, 격렬한 운동시 최대 4배)
+  const activityMultiplier = 1 + (state.activityScore * CONFIG.ACTIVITY_MULTIPLIER);
+  
+  const tickLoss = baseLoss * activityMultiplier;
+  
+  state.accumulatedLoss += tickLoss;
+  state.lastUpdateTime = now;
+  
+  localStorage.setItem(CONFIG.STORAGE_KEY_ACCUMULATED_LOSS, String(state.accumulatedLoss));
+  localStorage.setItem(CONFIG.STORAGE_KEY_LAST_UPDATE, String(state.lastUpdateTime));
+
+  state.protection = Math.round(clamp(100 - state.accumulatedLoss, 0, 100));
 }
 
 /* ------------------------------------------------------------
@@ -329,11 +350,7 @@ function updateUI() {
   state.activityScore = calculateActivity();
   dom.activityValue.textContent = state.activityScore.toFixed(2);
 
-  const uv = state.currentUV ?? CONFIG.UV_FALLBACK;
-
-  state.protection = state.appliedAt
-    ? calculateProtection(elapsedMinutes, uv, state.activityScore)
-    : 100;
+  updateProtection(now.getTime());
 
   dom.protectionValue.textContent = `${state.protection}%`;
   dom.protectionInfoValue.textContent = `${state.protection}%`;
@@ -377,8 +394,14 @@ function updateUI() {
 ------------------------------------------------------------ */
 function applySunscreen() {
   state.appliedAt = Date.now();
+  state.accumulatedLoss = 0;
+  state.lastUpdateTime = state.appliedAt;
   state.notified = false;
+  
   localStorage.setItem(CONFIG.STORAGE_KEY_APPLIED_AT, String(state.appliedAt));
+  localStorage.setItem(CONFIG.STORAGE_KEY_ACCUMULATED_LOSS, String(state.accumulatedLoss));
+  localStorage.setItem(CONFIG.STORAGE_KEY_LAST_UPDATE, String(state.lastUpdateTime));
+  
   dom.warningBanner.classList.add('hidden');
   updateLastAppliedText();
   updateUI();
@@ -467,6 +490,18 @@ function init() {
   const saved = localStorage.getItem(CONFIG.STORAGE_KEY_APPLIED_AT);
   if (saved) {
     state.appliedAt = Number(saved);
+    state.accumulatedLoss = Number(localStorage.getItem(CONFIG.STORAGE_KEY_ACCUMULATED_LOSS) || 0);
+    state.lastUpdateTime = Number(localStorage.getItem(CONFIG.STORAGE_KEY_LAST_UPDATE) || state.appliedAt);
+    
+    // 앱이 종료되어 있던 시간 동안의 감소량 보정 (활동량은 기본 1배로 가정)
+    const now = Date.now();
+    if (state.lastUpdateTime < now) {
+      const dtMinutes = (now - state.lastUpdateTime) / 60000;
+      const baseLoss = (CONFIG.BASE_LOSS_PER_MINUTE + CONFIG.UV_FALLBACK * CONFIG.UV_LOSS_PER_MINUTE_PER_UV) * dtMinutes;
+      state.accumulatedLoss += baseLoss;
+      state.lastUpdateTime = now;
+    }
+    
     updateLastAppliedText();
   }
 
